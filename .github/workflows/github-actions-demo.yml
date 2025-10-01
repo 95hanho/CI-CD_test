@@ -16,3 +16,54 @@ jobs:
               run: |
                   ls ${{ github.workspace }}
             - run: echo "🍏 This job's status is ${{ job.status }}."
+    ci:
+        runs-on: ubuntu-latest # GitHub에서 제공하는 Ubuntu Linux 가상머신에서 실행
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              # 👉 현재 리포지토리의 소스를 러너(빌드 서버)에 내려받기
+
+            - name: Use Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20 # Node.js 20 버전을 설치
+                  cache: "npm" # npm 캐시를 활성화해서 설치 속도 개선
+              # 👉 Next.js 프로젝트는 Node.js 런타임이 필요하므로 환경 세팅
+
+            - name: Install
+              run: npm ci
+              # 👉 package-lock.json 기반으로 의존성(라이브러리) 설치
+              # npm install 대신 npm ci는 CI 환경에서 더 빠르고 일관성 있게 설치됨
+
+            - name: Lint
+              run: npm run lint
+              # 👉 ESLint 실행. 코드 스타일/문법 오류 자동 검증
+              # 실패 시 워크플로우 전체가 에러 처리됨
+
+            - name: Typecheck
+              run: npm run typecheck
+              # 👉 TypeScript 프로젝트일 경우 타입 오류가 없는지 검사(tsc --noEmit)
+              # JS 프로젝트라면 이 단계는 스킵 가능
+
+            - name: Unit tests
+              run: npm test --if-present
+              # 👉 Jest, Vitest 같은 테스트 러너 실행
+              # --if-present: package.json에 "test" 스크립트가 없으면 그냥 무시
+
+            - name: Build
+              run: npm run build
+              # 👉 Next.js 빌드. 기본적으로 .next/ 폴더에 산출물 생성
+              # 정적 배포라면 package.json에 "build": "next build && next export"를 넣어 out/ 생성 가능
+
+            # (선택) 빌드 산출물 보관 — 디버깅/아티팩트 증빙용
+            - name: Upload build artifact
+              if: success() # 위 단계들 성공 시에만 실행
+              uses: actions/upload-artifact@v4
+              with:
+                  name: fe-build # 저장될 아티팩트 이름
+                  path: | # 업로드할 빌드 산출물 경로
+                      .next
+                      out
+                  if-no-files-found: ignore
+              # 👉 Actions 실행 결과 탭에서 build 결과물을 zip 형태로 내려받아 확인 가능
+              #    예: .next (SSR/ISR 빌드), out (정적 export 결과물)
