@@ -36,12 +36,13 @@ jobs:
               # npm install 대신 npm ci는 CI 환경에서 더 빠르고 일관성 있게 설치됨
 
             - name: Lint
-              run: npm run lint
+              run: npm run lint --if-present
               # 👉 ESLint 실행. 코드 스타일/문법 오류 자동 검증
               # 실패 시 워크플로우 전체가 에러 처리됨
 
             - name: Typecheck
-              run: npm run typecheck
+              run: npm run typecheck --if-present
+              #  --if-present를 붙여서 타입스크립트 아닐 때 스킵하고 넘어갑니다.
               # 👉 TypeScript 프로젝트일 경우 타입 오류가 없는지 검사(tsc --noEmit)
               # JS 프로젝트라면 이 단계는 스킵 가능
 
